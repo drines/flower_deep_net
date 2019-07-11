@@ -137,8 +137,8 @@ dmypy.json
 /assets
 
 # Ignore the prototyping Jupyter Notebook
-'Image Classifier Project.ipynb'
-'Image Classifier Project.html'
+Image\ Classifier\ Project.ipynb
+Image\ Classifier\ Project.html
 
 # Ignore the Checkpoint file - too large
 checkpoint.pth
