@@ -3,7 +3,7 @@
 #
 # PROGRAMMER:       Daniel Rines - drines(at)gmail(dot)com
 # DATE CREATED:     2019.07.10
-# REVISED DATE:     2019.07.10
+# REVISED DATE:     2019.07.12
 # PURPOSE:  Program for training a convolutional neural network.
 #
 # INPUT:    
@@ -80,7 +80,7 @@ def get_input_args():
         parse_args() -data structure that stores the command line arguments
     """
     # Create Parse using ArgumentParser
-    parser = argparse.ArgumentParser(description='Trains a Convolutional'+
+    parser = argparse.ArgumentParser(description='Trains a Convolutional '+
              'Neural Network on a provided set of images.')
     # Create the command line arguments as mentioned above
     parser.add_argument('data_dir',
@@ -89,12 +89,12 @@ def get_input_args():
                         help='Data Dir.: (default: flowers).')
     parser.add_argument('--save_dir',
                         type=str,
-                        default='',
-                        help='Checkpoint Dir.: (default: None).')
+                        default='/home/workspace/ImageClassifier',
+                        help='Checkpoint Dir.: (default: "/home/workspace/ImageClassifier").')
     parser.add_argument('--arch',
                         type=str,
                         default='vgg16',
-                        help='Architecture: (default: "VGG16").')
+                        help='Architecture: (options: "VGG13", "VGG16", "DenseNet121", default: "VGG16").')
     parser.add_argument('--learning_rate',
                         type=float,
                         default=0.0001,
@@ -306,10 +306,10 @@ class FCNN(object):
         """
         # now for the training and validation process
         print(f"Training the model with the following parameters:\n"
-              f"\tmodel: \t\t\t{self.arch}\n"
-              f"\thidden units: \t\t{self.hidden_size}\n"
-              f"\tlearning rate: \t\t{self.learning_rate}\n"
-              f"\tepochs: \t\t{self.epochs}\n"
+              f"\tmodel archit.: \t{self.arch}\n"
+              f"\thidden units: \t{self.hidden_size}\n"
+              f"\tlearning rate: \t{self.learning_rate}\n"
+              f"\ttotal epochs: \t{self.epochs}\n"
               f"\tGPU processing: \t{self.gpu}\n"
              ) 
 
@@ -317,6 +317,8 @@ class FCNN(object):
         device = self.gpu_status()
         self.model.to(device)
 
+        print("Starting epoch: 1 of {}...\n".format(self.epochs))
+        
         # loop thru based on total epochs desired
         for epoch in range(self.epochs):
             
@@ -377,7 +379,7 @@ class FCNN(object):
                       f"Valid accuracy: {valid_accuracy / len(self.valid_loader):.2f}")
 
 
-    def save_network(self, save_dir='.', checkpoint_file='checkpoint.pth'):
+    def save_network(self, save_dir='/home/workspace/ImageClassifier', checkpoint_file='checkpoint.pth'):
         """
         Method for saving the neural network to a checkpoint file so it can be
         reloaded again without the need to re-train the network.
@@ -401,7 +403,7 @@ class FCNN(object):
 
         # save the model to the specified folder and file name
         torch.save(checkpoint, save_dir + "/" + checkpoint_file)
-
+        print("Trained model saved to: {}".format(in_args.save_dir + '/checkpoint.pth'))
 
 # Entry point into program
 if __name__ == "__main__":
@@ -415,8 +417,4 @@ if __name__ == "__main__":
     model.train_network()
 
     # save the network to a checkpoint file
-    if in_args.save_dir != '':
-        model.save_network(in_args.save_dir, 'checkpoint.pth')
-        print("Trained model saved to: {}".format(in_args.save_dir + '/checkpoint.pth'))
-    else:
-        print("No model file name argument supplied, no checkpoint.pth file created at this time.")
+    model.save_network(in_args.save_dir, 'checkpoint.pth')
