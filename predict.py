@@ -3,7 +3,7 @@
 #
 # PROGRAMMER:       Daniel Rines - drines(at)gmail(dot)com
 # DATE CREATED:     2019.07.12
-# REVISED DATE:     2019.07.12
+# REVISED DATE:     2019.07.17
 # PURPOSE:  Program for using a convolutional neural network to predict.
 #
 # INPUT:    
@@ -32,6 +32,9 @@
 #
 # for taking command line arguments in parameters
 import argparse
+
+# Collections and JSON libraries
+import json
 
 # load object model with associated methods
 from fcnn import FCNN
@@ -67,30 +70,22 @@ def get_input_args():
     parser = argparse.ArgumentParser(description='Trains a Convolutional '+
              'Neural Network on a provided set of images.')
     # Create the command line arguments as mentioned above
-    parser.add_argument('data_dir',
+    parser.add_argument('input',
                         type=str,
-                        default='flowers',
-                        help='Data Dir.: (default: flowers).')
-    parser.add_argument('--save_dir',
+                        default='./flowers/test/1/image_06743.jpg',
+                        help='Image file: (default: flowers/test/1/image_06743.jpg).')
+    parser.add_argument('checkpoint',
                         type=str,
-                        default='/home/workspace/ImageClassifier',
-                        help='Checkpoint Dir.: (default: "/home/workspace/ImageClassifier").')
-    parser.add_argument('--arch',
-                        type=str,
-                        default='vgg16',
-                        help='Architecture: (options: "VGG13", "VGG16", "DenseNet121", default: "VGG16").')
-    parser.add_argument('--learning_rate',
-                        type=float,
-                        default=0.0001,
-                        help='Learning Rate: (default: 0.0001).')
-    parser.add_argument('--hidden_units',
+                        default='/home/workspace/ImageClassifier/checkpoint.pth',
+                        help='Checkpoint file: (default: "/home/workspace/ImageClassifier/checkpoint.pth").')
+    parser.add_argument('--top_k',
                         type=int,
-                        default=2048,
-                        help='Hidden Units: (default: 2048).')
-    parser.add_argument('--epochs',
-                        type=int,
-                        default=6,
-                        help='Epochs: (default: 6).')
+                        default=5,
+                        help='Top K: (default: 5).')
+    parser.add_argument('--category_names',
+                        type=str,
+                        default='cat_to_names.json',
+                        help='Category names: (default: cat_to_names.json).')
     parser.add_argument('--gpu', action='store_true',
                         default=False,
                         dest='gpu',
@@ -100,72 +95,41 @@ def get_input_args():
     return parser.parse_args()
 
 
-
-def process_image(image_path):
-    ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
-        returns an Numpy array
-    '''
-    # Process a PIL image for use in a PyTorch model
-    img = Image.open(image_path)
-    width = img.size[0]
-    height = img.size[1]
-    
-    # scale the image
-    resize_dim = 256
-    if width > height:
-        percent = float(resize_dim) / float(height)
-        resize_width = int(width * percent)
-        img = img.resize((resize_width, resize_dim), Image.BILINEAR)
-    else:
-        percent = float(resize_dim) / float(width)
-        resize_height = int(height * percent)
-        img = img.resize((resize_dim, resize_dim), Image.BILINEAR)
-    
-    # crop the image object
-    crop_size = 224
-    left = (img.size[0] - crop_size) / 2
-    upper = (img.size[1] - crop_size) / 2
-    right = left + crop_size
-    lower = upper + crop_size
-    img = img.crop((left, upper, right, lower))
-    
-    # normalize the pixel values 
-    # adjust values to be between 0 - 1 instead of 0 - 255
-    img = np.array(img) / 255
-    mean = np.array([0.485, 0.456, 0.406]) # mean as provided above with Transform
-    std = np.array([0.229, 0.224, 0.225])  # std dev as provided above with Transform
-    img = (img - mean) / std  # normalize
-    
-    # PyTorch expects the color channel to be the first dimension but it's the third dimension
-    # moving the third index to the first, and shifting the other two indices
-    img = img.transpose((2, 0, 1))
-    img = torch.from_numpy(img).type(torch.FloatTensor) 
-    
-    # return the Pytorch tensor (image)
-    return img
-
-
 # Entry point into program
 if __name__ == "__main__":
      # parse in the input arguments
     in_args = get_input_args()
 
-    # let's grab a random image file from the test folder
-    flower_num = str(np.random.randint(low=1, high=103))
-    image_dir = './flowers/test/' + flower_num + '/'
-    flower_list = [x for x in os.listdir(image_dir) if x.endswith('.jpg')]
-    rand_flower = np.random.randint(low=0, high=len(flower_list))
-    image_file = image_dir + flower_list[rand_flower]
+    # # let's grab a random image file from the test folder
+    # flower_num = str(np.random.randint(low=1, high=103))
+    # image_dir = './flowers/test/' + flower_num + '/'
+    # flower_list = [x for x in os.listdir(image_dir) if x.endswith('.jpg')]
+    # rand_flower = np.random.randint(low=0, high=len(flower_list))
+    # image_file = image_dir + flower_list[rand_flower]
+
+    # initialize the fcnn model
+    network = FCNN()
+    model, optimizer = network.load_checkpoint(in_args.checkpoint)
+
+    # process the image (in numpy format) for a pytorch inference
+    img = network.process_image(in_args.input).unsqueeze(0)
 
     # run the file through the NN model
-    probs, classes = predict(image_file, model)
+    probs, classes = network.predict(img, model, topk=in_args.top_k)
 
     # the classes list includes the value, not the key
     # need to swap the key value to match the cat_to_name keys
     idx_to_class = dict((value, key) for key, value in model.class_to_idx.items())
 
     # convert the class indices into flower names
+    # load and assign image truth values to a dictionary for training and testing
+    try:
+        with open(in_args.category_names, 'r') as f:
+            network.cat_to_name = json.load(f)
+    except ValueError:
+        print("There was an error loading {}.".format(in_args.category_names))
+
     names = []
     for index in classes:
-        names.append(str(idx_to_class[index]) + " : " + cat_to_name[idx_to_class[index]])
+        names.append(str(idx_to_class[index]) + " : " + network.cat_to_name[idx_to_class[index]])
     print(names)

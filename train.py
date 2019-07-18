@@ -3,7 +3,7 @@
 #
 # PROGRAMMER:       Daniel Rines - drines(at)gmail(dot)com
 # DATE CREATED:     2019.07.10
-# REVISED DATE:     2019.07.13
+# REVISED DATE:     2019.07.17
 # PURPOSE:  Program for training a convolutional neural network.
 #
 # INPUT:    
@@ -35,6 +35,10 @@
 #
 # taking command line arguments in parameters
 import argparse
+
+# Collections and JSON libraries
+import json
+#from collections import OrderedDict
 
 # load object model with associated methods
 from fcnn import FCNN
@@ -98,6 +102,10 @@ def get_input_args():
                         default=False,
                         dest='gpu',
                         help='GPU switch: (default: Off).')
+    parser.add_argument('--category_names',
+                        type=str,
+                        default='cat_to_names.json',
+                        help='Category names: (default: cat_to_names.json).')
 
     # Return the parsed arguments back to the calling function
     return parser.parse_args()
@@ -108,16 +116,30 @@ if __name__ == "__main__":
      # parse in the input arguments
     in_args = get_input_args()
 
-    # instantiate the fully-connected neural network
-    model = FCNN(in_args)
+    # instantiate and initialize the fully-connected neural network
+    network = FCNN(in_args.data_dir)
+    network.model, network.criterion, network.optimizer =\
+        network.set_network_model(arch=in_args.arch,
+                                  learning_rate=in_args.learning_rate,
+                                  hidden_size=in_args.hidden_units,
+                                  dropout_rate=0.3)
 
-#    load and assign image truth values to a dictionary for training and testing
-    # TODO: trap for exceptions
-    with open(label_file, 'r') as f:
-        return json.load(f)
+    # load and assign image truth values to a dictionary for training and testing
+    label_file = 'cat_to_name.json'
+    try:
+        with open(in_args.category_names, 'r') as f:
+            network.cat_to_name = json.load(f)
+    except ValueError:
+        print("There was an error loading {}.".format(in_args.category_names))
 
     # train the model
-    model.train_network()
+    network.train_network(network.model, 
+                          network.optimizer, 
+                          network.criterion, 
+                          epochs=in_args.epochs)
 
     # save the network to a checkpoint file
-    model.save_checkpoint(in_args.save_dir, 'checkpoint.pth')
+    network.save_checkpoint(network.model, 
+                            network.optimizer, 
+                            in_args.save_dir, 
+                            'checkpoint.pth')
