@@ -3,7 +3,7 @@
 #
 # PROGRAMMER:       Daniel Rines - drines(at)gmail(dot)com
 # DATE CREATED:     2019.07.10
-# REVISED DATE:     2019.07.17
+# REVISED DATE:     2019.07.18
 # PURPOSE:  Program for training a convolutional neural network.
 #
 # INPUT:    
@@ -23,7 +23,7 @@
 #               validation loss
 #               Validation accuracy
 #
-#   Example call:
+# Example call:
 #       Basic usage: 
 #           python train.py data_directory
 #       Options:
@@ -53,26 +53,17 @@ def get_input_args():
     they run the program from a terminal window. If the user fails to provide 
     some or all of the arguments, then the default values are used for the 
     missing arguments. 
-
-    Available Command Line Arguments:
-      Required:
-        1. Data Directory         data_dir <string>
-      Optional:
-        2. Checkpoint Directory   --save_dir <string>
-        3. NN Architecture        --arch <string>
-        4. Learning Rate:         --learning_rate <float>
-        5. Hidden Units:          --hidden_units <int>
-        6. Epochs:                --epochs <int>
-        7. Use GPU:               --gpu
     
-    Parameters:
+    INPUTS:
         None - using argparse module to store command line arguments
-    Returns:
+    RETURNS:
         parse_args() -data structure that stores the command line arguments
     """
     # Create Parse using ArgumentParser
     parser = argparse.ArgumentParser(description='Trains a Convolutional '+
-             'Neural Network on a provided set of images.')
+             'Neural Network on a provided set of images. Use the '+
+             'predict.py file to identity an object in an image file '+
+             'with the training and learning results generated here.')
     # Create the command line arguments as mentioned above
     parser.add_argument('data_dir',
                         type=str,
@@ -81,7 +72,7 @@ def get_input_args():
     parser.add_argument('--save_dir',
                         type=str,
                         default='/home/workspace/ImageClassifier',
-                        help='Checkpoint Dir.: (default: "/home/workspace/ImageClassifier").')
+                        help='Checkpoint Dir.: (default: /home/workspace/ImageClassifier).')
     parser.add_argument('--arch',
                         type=str,
                         default='vgg16',
@@ -104,20 +95,24 @@ def get_input_args():
                         help='GPU switch: (default: Off).')
     parser.add_argument('--category_names',
                         type=str,
-                        default='cat_to_names.json',
-                        help='Category names: (default: cat_to_names.json).')
+                        default='cat_to_name.json',
+                        help='Category names: (default: cat_to_name.json).')
 
     # Return the parsed arguments back to the calling function
     return parser.parse_args()
 
 
-# Entry point into program
-if __name__ == "__main__":
-     # parse in the input arguments
-    in_args = get_input_args()
-
+def main(in_args):
+    """
+    Main function for program execution.
+    INPUTS:
+        1. Cmd line arguments   <in_args data structure>
+    RETURNS:
+        None
+    """
     # instantiate and initialize the fully-connected neural network
-    network = FCNN(in_args.data_dir)
+    network = FCNN()
+    network.set_data_loaders(in_args.data_dir)
     network.model, network.criterion, network.optimizer =\
         network.set_network_model(arch=in_args.arch,
                                   learning_rate=in_args.learning_rate,
@@ -125,15 +120,18 @@ if __name__ == "__main__":
                                   dropout_rate=0.3)
 
     # load and assign image truth values to a dictionary for training and testing
-    label_file = 'cat_to_name.json'
     try:
-        with open(in_args.category_names, 'r') as f:
-            network.cat_to_name = json.load(f)
-    except ValueError:
-        print("There was an error loading {}.".format(in_args.category_names))
+        f = open(in_args.category_names, 'r')
+        network.cat_to_name = json.load(f)
+    except Exception as error:
+        print("While loading '{}', the following error occurred: {}; check the spelling and file location.".format(in_args.category_names, error))
+        return
+    else:
+        f.close()
 
     # train the model
-    network.train_network(network.model, 
+    network.train_network(in_args.gpu,
+                          network.model, 
                           network.optimizer, 
                           network.criterion, 
                           epochs=in_args.epochs)
@@ -143,3 +141,10 @@ if __name__ == "__main__":
                             network.optimizer, 
                             in_args.save_dir, 
                             'checkpoint.pth')
+
+
+# Entry point into program
+if __name__ == "__main__":
+     # parse in the input arguments
+    main(get_input_args())
+

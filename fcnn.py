@@ -3,8 +3,8 @@
 #
 # PROGRAMMER:       Daniel Rines - drines(at)gmail(dot)com
 # DATE CREATED:     2019.07.13
-# REVISED DATE:     2019.07.17
-# PURPOSE:  Object model and associated methods for the fully connected
+# REVISED DATE:     2019.07.18
+# PURPOSE:  Object model and associated methods for creating the fully connected
 #           neural network that is used by train.py and predict.py.
 #
 
@@ -34,27 +34,21 @@ import numpy as np
 class FCNN(object):
     """
     Class definition for the fully connected convolutional neural network (CNN)
-    training program. The neural network model takes in a number of
-    optional parameters at time of instantiation:
+    training program.
     """
 
     def __init__(self, data_dir='./'):
         """
-        Initialization and class related variables.
+        Initialization of class related variables.
         INPUTS:
-            1. Model Architecture:      <string>
-            2. Input size:              <int>
-            3. Hidden size:             <int>
-            4. Output size:             <int>
-            5. Dropout rate:            <float>
-            6. Learning rate:           <float>
+            1. Data directory: <string>
         RETURNS:
             None
         """
-        # default to CPU for device computation
-        self.gpu = 'cpu'
-
         # assign the model parameters, instantiate the model object and load 
+        # assume cpu processing gpu selected by command line argument
+        self.device_location = 'cpu'
+
         # the desired pretrained model into this object
         self.arch = ''
         self.input_size = 0
@@ -69,38 +63,38 @@ class FCNN(object):
         self.train_loader = ''
         self.valid_loader = ''
         self.test_loader = ''
-        self.class_to_idx = self.set_data_loaders(data_dir)
+        self.class_to_idx = {}
      
         # assign the flower to human readable names with associated index numbers
         # to the cat_to_name dictionary
         self.cat_to_name = {}
         
         # variables for keeping track of training performance
-        self.epochs = 1 # args.epochs
+        self.epochs = 1
         self.training_loss = 0
         
 
-    def gpu_status(self):
+    def gpu_status(self, gpu_arg):
         """
-        Method for checking on the status of a GPU before model device assignment.
+        Checks on the status of a GPU for model device assignment.
         INPUTS:
-            1. Command line GPU switch  <bool>
+            1. Command line GPU switch argument:    <bool>
         RETURNS:
-            None
+            1. PyTorch device type available:       <device object>
         """
         # check if the GPU is currently available and set device flag appropriately
-        gpu_status = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device_location = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         # if GPU switch was selected during program initiation
-        if self.gpu and gpu_status == "cuda:0":
-            print("Activating GPU...")
-            return torch.device("cuda:0")
+        if gpu_arg == True and self.device_location == "cuda:0":
+            return torch.device(self.device_location)
         
         # GPU switch not requested of device not available
         else:
-            print("GPU not available or not requested, using CPU...")
-            self.gpu = False
-            return torch.device("cpu")
+            if gpu_arg:
+                print("Sorry, GPU not available, using CPU instead...")
+            self.device_location = "cpu"
+            return torch.device(self.device_location)
 
 
     def set_data_loaders(self, data_dir, 
@@ -108,15 +102,15 @@ class FCNN(object):
                          valid_dir='/valid', 
                          test_dir='/test'):
         """
-        Initialize and define the different transforms along with the associate
+        Initializes and defines the different transforms along with the associated
         data loaders.
         INPUTS:
-            1. train_dir    <str>
-            2. valid_dir    <str>
-            3. test_dir     <str>
-            4. batch_size   <int>
+            1. Data dir root:   <str>
+            2. Training dir:    <str>
+            3. Validation dir:  <str>
+            4. Test dir:        <str>
         RETURNS:
-            1. class_to_idx <dict>
+            None
         """
         # resize the images to square (255 pixels) prior to cropping the images to 224x224 pixels
         # also perform data augmentation with randomization (rotation, resize, flipping)
@@ -147,7 +141,7 @@ class FCNN(object):
         self.valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=self.batch_size)
         self.test_loader =  torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
 
-        return train_dataset.class_to_idx
+        self.class_to_idx = train_dataset.class_to_idx
 
 
     def set_network_model(self, arch='vgg16',
@@ -156,14 +150,16 @@ class FCNN(object):
                           dropout_rate=0.3,
                           ):
         """
-        Loads the pretrained network model.
-
+        Loads a user selected network model architecture.
         INPUTS:
-            None
+            1. Predefined model arch:       <str>
+            2. Learning rate:               <float>
+            3. Num of hidden units:         <int>
+            4. Percent of dropouts:         <float>
         RETURNS:
-            1. model object
-            2. criterion
-            3. optimizer object
+            1. Selected model definition:   <model object>
+            2. Predefined loss def:         <criterion object>
+            3. Gradient descent def:        <optimizer object>
         """
         # load a pre-trained network model based on the command line argument, if supplied
         if arch.lower() == 'vgg13':
@@ -212,16 +208,26 @@ class FCNN(object):
         return model, criterion, optimizer
    
 
-    def train_network(self, model, optimizer, criterion, epochs=1, top_k=1):
+    def train_network(self, gpu_arg, model, optimizer, criterion, epochs=1, top_k=1):
         """
-        Method for peforming training of the network's features only.
+        Performs training of the network's features only along with validation
+        accuracy and loss rates while conducting the training operation.
         INPUTS:
-            None
+            1. GPU user selection:      <bool>
+            2. Network model:           <model object>
+            3. Gradient descent def:    <optimizer object>
+            4. Predefined loss def:     <criterion object>
+            5. User's epoch value:      <int>
+            6. Top K id's for error:    <int>
         RETURNS:
             None
         """
         # update the requested epochs value
         self.epochs = epochs
+
+        # push model to correct processor
+        device = self.gpu_status(gpu_arg)
+        model.to(device)
 
         # now for the training and validation process
         print(f"Training the model with the following parameters:\n"
@@ -229,14 +235,10 @@ class FCNN(object):
               f"\thidden units: \t{self.hidden_size}\n"
               f"\tlearning rate: \t{self.learning_rate}\n"
               f"\ttotal epochs: \t{self.epochs}\n"
-              f"\tGPU processing: \t{self.gpu}\n"
+              f"\tGPU processing: \t{self.device_location.upper()}\n"
              ) 
 
-        # push model to correct processor
-        device = self.gpu_status()
-        model.to(device)
-
-        print("Starting epoch: 1 of {}...\n".format(self.epochs))
+        print("Starting epoch: 1 of {}...".format(self.epochs))
         
         # loop thru based on total epochs desired
         for epoch in range(self.epochs):
@@ -301,15 +303,19 @@ class FCNN(object):
                         save_dir='/home/workspace/ImageClassifier', 
                         checkpoint_file='checkpoint.pth'):
         """
-        Method for saving the neural network to a checkpoint file so it can be
+        Saves the neural network to a checkpoint file so it can be
         reloaded again without the need to re-train the network.
         INPUTS:
-            1. Checkpoint file name     <str>
+            1. Network model:           <model object>
+            2. Gradient descent def:    <optimizer object>
+            3. URL for checkpoint file: <str>
+            4. Checkpoint file name     <str>
         RETURNS:
             None
         """
         # define the checkpoint dict for saving, loading and inference later
-        checkpoint = {'input_size' : self.input_size,
+        checkpoint = {'arch' : self.arch,
+                      'input_size' : self.input_size,
                       'hidden_size' : self.hidden_size,
                       'output_size' : self.output_size,
                       'classifier' : model.classifier,
@@ -321,33 +327,51 @@ class FCNN(object):
                       'optimizer_state_dict': optimizer.state_dict()}
 
         # save the model to the specified folder and file name
-        torch.save(checkpoint, save_dir + "/" + checkpoint_file)
-        print("Trained model saved to: {}".format(save_dir + '/checkpoint.pth'))
+        try:
+            torch.save(checkpoint, save_dir + "/" + checkpoint_file)
+        except Exception as error:
+            print("The following error: {} occurred while saving the checkpoint file to: {}".format(error, save_dir + "/" + checkpoint_file))
+        else:
+            print("Trained model saved to: {}".format(save_dir + "/" + checkpoint_file))
 
 
     # Method that loads a checkpoint and rebuilds the model
-    def load_checkpoint(self, checkpoint_file):
+    def load_checkpoint(self, gpu_arg, checkpoint_file):
         """
         Method to load a checkpoint file and reassign required variables.
         INPUT:
-            1. Checkpoint file:     <string>
-        OUTPUT:
-            1. Model                <object>
-            2. Optimizer            <object>
+            1. GPU user selection:          <bool>
+            2. Checkpoint file:             <string>
+        RETURNS:
+            1. Selected model definition:   <model object>
+            2. Gradient descent def:        <optimizer object>
         """
         # check if the GPU is currently available and set device flag appropriately
-        dev_location = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-        # load the old model state
-        checkpoint = torch.load(checkpoint_file, map_location=dev_location)
-        model = models.vgg16(pretrained=True)
+        _ = self.gpu_status(gpu_arg)
         
+        # load the old model state
+        checkpoint = torch.load(checkpoint_file, map_location=self.device_location)
+        
+        # load a pre-trained network model based on the command line argument, if supplied
+        if checkpoint['arch'] == 'vgg13':
+            model = models.vgg13(pretrained=True)
+        elif checkpoint['arch'] == 'vgg16':
+            model = models.vgg16(pretrained=True)
+        elif checkpoint['arch'] == 'densenet121':
+            model = models.densenet121(pretrained=True)
+        else:
+            model = models.vgg16(pretrained=True)
+            print("Checkpoint model architecture not recoginized or supported. \n"
+                  "Using default VGG16 instead. Available architectures: VGG13, \n"
+                  "VGG16, and DenseNet121.\n")
+
         # freeze the networks parameters so no backprop occurs
         for param in model.parameters():
             param.requires_grad = False
 
         # in case more training is desired, assign needed values
-        self.epoch = checkpoint['epoch']
+        self.arch = checkpoint['arch']
+        self.epochs = checkpoint['epochs']
         self.training_loss = checkpoint['loss']
         model.classifier = checkpoint['classifier']
         #criterion = checkpoint['criterion']
@@ -364,8 +388,13 @@ class FCNN(object):
 
 
     def process_image(self, image_path):
-        ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
-            returns an Numpy array
+        '''
+        Scales, crops, and normalizes a PIL image for a PyTorch model,
+        and returns an Numpy array.
+        INPUTS:
+            1. Relative image path and file name:   <str>
+        RETURNS:
+            1. Numpy array
         '''
         # Process a PIL image for use in a PyTorch model
         img = Image.open(image_path)
@@ -407,13 +436,22 @@ class FCNN(object):
         return img
 
 
-    def predict(self, img, model, topk=5):
-        ''' Predict the class (or classes) of an image using a trained deep learning model.
-        '''
+    def predict(self, img, model, gpu_arg, topk=5):
+        """
+        Predicts the class (or classes) of an image using a trained deep learning model.
+        INPUTS:
+            1. Numpy image array
+            2. Network model                    <model object>
+            3. GPU user selection:              <bool>
+            4. Requested top K results:         <int>
+        RETURNS:
+            1. List of top K probabilities:     <list>
+            2. List of top K classes:           <list>
+        """
         # Predict the class from an image file
         
         # push model to correct processor
-        device = self.gpu_status()
+        device = self.gpu_status(gpu_arg)
         model.to(device)
 
         # turn off gradient calc for testing

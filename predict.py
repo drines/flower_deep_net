@@ -3,14 +3,15 @@
 #
 # PROGRAMMER:       Daniel Rines - drines(at)gmail(dot)com
 # DATE CREATED:     2019.07.12
-# REVISED DATE:     2019.07.17
-# PURPOSE:  Program for using a convolutional neural network to predict.
+# REVISED DATE:     2019.07.18
+# PURPOSE:  Program for using a convolutional neural network to predict
+#           the identity (class) with an associated likelihood probability.
 #
 # INPUT:    
 #           Command Line Arguments:
 #               Required:
-#                   1. Image File             <string>
-#                   2. Checkpoint             <string>
+#                   1. input:                 <string> Image File
+#                   2. Checkpoint             <string> Checkpoint.pth filename
 #               Optional:
 #                   3. Top K                  --top_k <int>
 #                   4. Category Names         --category_names <string>
@@ -49,43 +50,34 @@ def get_input_args():
     they run the program from a terminal window. If the user fails to provide 
     some or all of the arguments, then the default values are used for the 
     missing arguments. 
-
-    Available Command Line Arguments:
-      Required:
-        1. Data Directory         data_dir <string>
-      Optional:
-        2. Checkpoint Directory   --save_dir <string>
-        3. NN Architecture        --arch <string>
-        4. Learning Rate:         --learning_rate <float>
-        5. Hidden Units:          --hidden_units <int>
-        6. Epochs:                --epochs <int>
-        7. Use GPU:               --gpu
     
-    Parameters:
+    INPUTS:
         None - using argparse module to store command line arguments
-    Returns:
+    RETURNS:
         parse_args() -data structure that stores the command line arguments
     """
     # Create Parse using ArgumentParser
-    parser = argparse.ArgumentParser(description='Trains a Convolutional '+
-             'Neural Network on a provided set of images.')
-    # Create the command line arguments as mentioned above
+    parser = argparse.ArgumentParser(description='Infers the identity '+
+        'of an object in an image (e.g. flower) using a trained network '+
+        'that was previously encapsulated a checkpoint.pth file. Use '+
+        'train.py to train the network and output the checkpoint file.')
+    # Create the command line arguments
     parser.add_argument('input',
                         type=str,
-                        default='./flowers/test/1/image_06743.jpg',
-                        help='Image file: (default: flowers/test/1/image_06743.jpg).')
+                        default='',
+                        help='Enter an input image filename and location.')
     parser.add_argument('checkpoint',
                         type=str,
-                        default='/home/workspace/ImageClassifier/checkpoint.pth',
-                        help='Checkpoint file: (default: "/home/workspace/ImageClassifier/checkpoint.pth").')
+                        default='',
+                        help='Enter a checkpoint file name and location.')
     parser.add_argument('--top_k',
                         type=int,
                         default=5,
                         help='Top K: (default: 5).')
     parser.add_argument('--category_names',
                         type=str,
-                        default='cat_to_names.json',
-                        help='Category names: (default: cat_to_names.json).')
+                        default='cat_to_name.json',
+                        help='Category names: (default: cat_to_name.json).')
     parser.add_argument('--gpu', action='store_true',
                         default=False,
                         dest='gpu',
@@ -95,27 +87,23 @@ def get_input_args():
     return parser.parse_args()
 
 
-# Entry point into program
-if __name__ == "__main__":
-     # parse in the input arguments
-    in_args = get_input_args()
-
-    # # let's grab a random image file from the test folder
-    # flower_num = str(np.random.randint(low=1, high=103))
-    # image_dir = './flowers/test/' + flower_num + '/'
-    # flower_list = [x for x in os.listdir(image_dir) if x.endswith('.jpg')]
-    # rand_flower = np.random.randint(low=0, high=len(flower_list))
-    # image_file = image_dir + flower_list[rand_flower]
-
+def main(in_args):
+    """
+    Main function for program execution.
+    INPUTS:
+        1. Cmd line arguments   <in_args data structure>
+    RETURNS:
+        None
+    """
     # initialize the fcnn model
     network = FCNN()
-    model, optimizer = network.load_checkpoint(in_args.checkpoint)
+    model, optimizer = network.load_checkpoint(in_args.gpu, in_args.checkpoint)
 
     # process the image (in numpy format) for a pytorch inference
     img = network.process_image(in_args.input).unsqueeze(0)
 
     # run the file through the NN model
-    probs, classes = network.predict(img, model, topk=in_args.top_k)
+    probs, classes = network.predict(img, model, in_args.gpu, topk=in_args.top_k)
 
     # the classes list includes the value, not the key
     # need to swap the key value to match the cat_to_name keys
@@ -124,12 +112,24 @@ if __name__ == "__main__":
     # convert the class indices into flower names
     # load and assign image truth values to a dictionary for training and testing
     try:
-        with open(in_args.category_names, 'r') as f:
-            network.cat_to_name = json.load(f)
-    except ValueError:
-        print("There was an error loading {}.".format(in_args.category_names))
+        f = open(in_args.category_names, 'r')
+        network.cat_to_name = json.load(f)
+    except Exception as error:
+        print("While loading '{}', the following error occurred: {}; check the spelling and file location.".format(in_args.category_names, error))
+        return
+    else:
+        f.close()
 
-    names = []
+    print("The network selected these top: {} identities for image: {}.".format(in_args.top_k, in_args.input))
+    idx = 0
     for index in classes:
-        names.append(str(idx_to_class[index]) + " : " + network.cat_to_name[idx_to_class[index]])
-    print(names)
+        print("{0:2d}: {1:} :: {2:3.2f}%".format(idx+1, network.cat_to_name[idx_to_class[index]].capitalize(), probs[idx]*100))
+        idx += 1
+    
+    return
+
+
+# Entry point into program
+if __name__ == "__main__":
+     # parse in the input arguments and pass to main
+    main(get_input_args())
