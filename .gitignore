@@ -142,3 +142,4 @@ Image\ Classifier\ Project.html
 
 # Ignore the Checkpoint file - too large
 checkpoint.pth
+*.zip

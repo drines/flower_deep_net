@@ -1,3 +1,3 @@
-# AI Programming with Python Project
+# PyTorch Convolutional Deep Net 1
 
-Project code for Udacity's AI Programming with Python Nanodegree program. In this project, students first develop code for an image classifier built with PyTorch, then convert it into a command line application.
+This project was developed as an image classifier built with PyTorch, that also runs as a command line application. The two programs: train.py and predict.py, perform transfer learning on a pre-trained deep net and also predict the class of an object in an image, respectively.
