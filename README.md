@@ -7,13 +7,27 @@ This project was developed as a deep learning image classifier built using the P
 ## **Training**
 Train a new network on a dataset with `train.py`. The code base was original developed and tested against the following dataset: [Univ. of Oxford - Flower Dataset](http://www.robots.ox.ac.uk/~vgg/data/flowers/102/index.html) which contains 102 different flower categories and was developed by [Maria-Elena Nilsback](http://www.robots.ox.ac.uk/~men/) and [Andrew Zisserman](http://www.robots.ox.ac.uk/~az/). Moreover, it is also built on the PyTorch framework and requires version 0.4 or later.
 
-* Basic usage: `python train.py data_directory`
+* Basic usage: 
+
+```python train.py data_directory```
+
 * Prints out training loss, validation loss, and validation accuracy as the network trains
 * Options:
-    * Set directory to save checkpoints: `python train.py data_dir --save_dir save_directory`
-    * Choose architecture: `python train.py data_dir --arch "vgg13"`
-    * Set hyperparameters: `python train.py data_dir --learning_rate 0.01 --hidden_units 512 --epochs 20`
-    * Use GPU for training: `python train.py data_dir --gpu`
+    * Set directory to save checkpoints: 
+    
+        ```python train.py data_dir --save_dir save_directory```
+
+    * Choose architecture: 
+    
+    ```python train.py data_dir --arch "vgg13"```
+
+    * Set hyperparameters: 
+    
+    ```python train.py data_dir --learning_rate 0.01 --hidden_units 512 --epochs 20```
+
+    * Use GPU for training: 
+    
+    ```python train.py data_dir --gpu```
 
 ---
 
