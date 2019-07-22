@@ -4,7 +4,7 @@ This project was developed as a deep learning image classifier built using the P
 
 
 ### **Training**
-Train a new network on a data set with `train.py`. The code base was original developed and tested against the following data set: [Univ. of Oxford - Flower Dataset](http://www.robots.ox.ac.uk/~vgg/data/flowers/102/index.html) which contains 102 different flower categories and was developed by [Maria-Elena Nilsback](http://www.robots.ox.ac.uk/~men/) and [Andrew Zisserman](http://www.robots.ox.ac.uk/~az/). Moreover, it is also built on the PyTorch framework and requires version 0.4 or later.
+Train a new network on a data set with `train.py`. The code base was original developed and tested against the following dataset: [Univ. of Oxford - Flower Dataset](http://www.robots.ox.ac.uk/~vgg/data/flowers/102/index.html) which contains 102 different flower categories and was developed by [Maria-Elena Nilsback](http://www.robots.ox.ac.uk/~men/) and [Andrew Zisserman](http://www.robots.ox.ac.uk/~az/). Moreover, it is also built on the PyTorch framework and requires version 0.4 or later.
 
 * Basic usage: `python train.py data_directory`
 * Prints out training loss, validation loss, and validation accuracy as the network trains
@@ -16,7 +16,7 @@ Train a new network on a data set with `train.py`. The code base was original de
 
 
 ### **Predicting**
-Predict the object's name from an image with `predict.py` along with the probability of that name. That is, you'll pass in a single image /path/to/image and return the object's name and class probability.
+Predict the object's name from an image with `predict.py` along with the probability of that name. That is, you pass in a single image `/path/to/image` and the program returns the top **_K_** predicted object name(s) and class probabilities.
 
 * Basic usage: `python predict.py /path/to/image checkpoint`
 * Options:
