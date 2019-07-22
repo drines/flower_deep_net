@@ -25,7 +25,7 @@ Predict the object's name from an image with `predict.py` along with the probabi
     * Use GPU for inference: `python predict.py input checkpoint --gpu`
 
 ### **Data Loading**
-Both programs use PyTorch's `torchvision` library to load data ([documentation](http://pytorch.org/docs/0.3.0/torchvision/index.html)). The dataset should be split into three parts, training (`/train`), validation (`/valid`), and testing (`\test`). 
+Both programs use PyTorch's `torchvision` library to load data ([documentation](http://pytorch.org/docs/0.3.0/torchvision/index.html)). The dataset should be split into three parts, training (`/train`), validation (`/valid`), and testing (`/test`). 
 
 For training, image transformations using random scaling, cropping, and flipping are applied to help the network generalize prediction ability and leads to better performance ultimately. Moreover, the image input data is resized to `224x224 pixels` as required by the pre-trained networks.
 
