@@ -1,6 +1,6 @@
 # **PyTorch Convolutional Deep Net 1**
 
-This project was developed as a deep learning image classifier built using the PyTorch framework. There are two python programs included, first to load and modify a pre-trained neural net (transfer learning) and, second to another to generate an object class prediction. In other words, the first file, `train.py`, will train a new network on a dataset and save the model as a checkpoint. The second file, `predict.py`, uses a trained network to predict the class for an input image. If a GPU is available, both the training and prediction can computational work can leverage the GPUs by activating the `--gpu` flag during program execution, see below for usage details.
+This project was developed as a deep learning image classifier built using the PyTorch framework. There are two python programs included, first to load and modify a pre-trained neural net (transfer learning), and second, another to generate an object class prediction. In other words, the first file, `train.py`, will train a new network on a dataset and save the model as a checkpoint. The second file, `predict.py`, uses a trained network to predict the class for an input image. If a GPU is available, both the training and prediction can computational work can leverage the GPUs by activating the `--gpu` flag during program execution, see below for usage details.
 
 
 ### **Training**
