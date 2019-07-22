@@ -5,7 +5,7 @@ This project was developed as a deep learning image classifier built using the P
 ---
 
 ## **Training**
-Train a new network on a dataset with `train.py`. The code base was original developed and tested against the following dataset: [Univ. of Oxford - Flower Dataset](http://www.robots.ox.ac.uk/~vgg/data/flowers/102/index.html) which contains 102 different flower categories and was developed by [Maria-Elena Nilsback](http://www.robots.ox.ac.uk/~men/) and [Andrew Zisserman](http://www.robots.ox.ac.uk/~az/). Moreover, it is also built on the PyTorch framework and requires version 0.4 or later.
+Train a new network on a dataset with `train.py`. The code base was originally developed and tested against the following dataset: [Univ. of Oxford - Flower Dataset](http://www.robots.ox.ac.uk/~vgg/data/flowers/102/index.html) which contains 102 different flower categories and was developed by [Maria-Elena Nilsback](http://www.robots.ox.ac.uk/~men/) and [Andrew Zisserman](http://www.robots.ox.ac.uk/~az/). Moreover, it is also built on the PyTorch framework and requires version 0.4 or later.
 
 * Basic usage: 
 
